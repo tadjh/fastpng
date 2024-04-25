@@ -25,16 +25,21 @@ logger = logging.getLogger(__name__)
 
 config = Settings()
 
+logger.debug(config.redis_dsn)
+logger.debug(type(config.redis_dsn))
+
 # application lifecycle
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    redis = aioredis.Redis(host=config.redis_dsn, port=6379)
-    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-    yield
-    redis.close()
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     redis = await aioredis.from_url(config.redis_dsn.unicode_string())
+#     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+#     yield
+#     await redis.close()
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    # lifespan=lifespan # disabled as caching within the application is disabled
+    )
 """
     Application object for the FastPNG application
 """
@@ -68,18 +73,21 @@ def health_check():
 
 
 @app.get("/fonts")
-@cache(expire=3600)
+# @cache(expire=3600)
 def read_fonts():
     """Returns the list of available font names
 
     Returns:
         list: Font Names
     """
-    return list(font_mapping.keys())
+    # font_keys = list(font_mapping.keys())
+    # sorted_font_keys = sorted(font_keys)
+    # return sorted_font_keys
+    return sorted(list(font_mapping.keys()))
 
 
 @app.get("/generate_image")
-@cache(expire=3600)
+# @cache(expire=3600) #being handled by the web server proxying this application
 async def generate_image(font: str, font_size: int, text: str):
     """Generates an image with the given font, font size and text
 
