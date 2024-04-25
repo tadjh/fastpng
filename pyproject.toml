@@ -1,0 +1,45 @@
+[tool.poetry]
+name = "fast-png"
+version = "0.1.0"
+description = "Real Time PNG generation via APIs"
+authors = ["Dingo <7553117+DingosGotMyBaby@users.noreply.github.com.>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.110.2"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+pillow = "^10.3.0"
+matplotlib = "^3.8.4"
+fastapi-cache2 = {extras = ["redis"], version = "^0.2.1"}
+aioredis = "^2.0.1"
+pydantic-settings = "^2.2.1"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.1.1"
+httpx = "^0.27.0"
+tox = "^4.14.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
+
+[tool.tox]
+envlist = "py312"
+legacy_tox_ini = """
+    [tox]
+    envlist = py312
+    minversion = 4.0
+    [testenv]
+    deps = 
+        pytest
+        httpx
+    commands = pytest
+"""
