@@ -10,13 +10,15 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-  redis:
-    image: "redis:alpine"
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+
+# redis is dead for now o7
+#   redis:
+#     image: "redis:alpine"
+#     ports:
+#       - "6379:6379"
+#     volumes:
+#       - redis_data:/data
   
-volumes:
-  redis_data:
-    driver: local
+# volumes:
+#   redis_data:
+#     driver: local
