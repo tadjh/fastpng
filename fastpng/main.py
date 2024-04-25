@@ -15,7 +15,7 @@ import io
 from PIL import Image, ImageDraw, ImageFont
 from matplotlib import font_manager
 
-from settings import Settings
+from .settings import Settings
 
 import logging
 
