@@ -1,17 +1,14 @@
 """
     Main module for the FastPNG application
 """
+
 from fastapi import FastAPI
 from fastapi.responses import Response
-from contextlib import asynccontextmanager
 
-from fastapi_cache import FastAPICache, coder
-from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.decorator import cache
-
-from redis import asyncio as aioredis
 
 import io
+import time
+import math
 from PIL import Image, ImageDraw, ImageFont
 from matplotlib import font_manager
 
@@ -28,18 +25,8 @@ config = Settings()
 logger.debug(config.redis_dsn)
 logger.debug(type(config.redis_dsn))
 
-# application lifecycle
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     redis = await aioredis.from_url(config.redis_dsn.unicode_string())
-#     FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
-#     yield
-#     await redis.close()
 
-
-app = FastAPI(
-    # lifespan=lifespan # disabled as caching within the application is disabled
-    )
+app = FastAPI()
 """
     Application object for the FastPNG application
 """
@@ -73,7 +60,6 @@ def health_check():
 
 
 @app.get("/fonts")
-# @cache(expire=3600)
 def read_fonts():
     """Returns the list of available font names
 
@@ -86,37 +72,68 @@ def read_fonts():
     return sorted(list(font_mapping.keys()))
 
 
-@app.get("/generate_image")
-# @cache(expire=3600) #being handled by the web server proxying this application
-async def generate_image(font: str, font_size: int, text: str):
-    """Generates an image with the given font, font size and text
+@app.get("/generate_image", responses={200: {"content": {"image/png": {}}}})
+async def generate_image(font: str, text: str, font_colour: str= "FFFFFF"):
+    """Generates an image with the given text and font
 
     Args:
-        font (str): The font name from the list of available fonts (See /fonts endpoint)
-        font_size (int): The font size of the text
-        text (str): The text to be rendered
+        font (str): The font name from /fonts
+        text (str): The text to be displayed
+        font_colour (str, optional): Colour of font in HEX. Defaults to "FFFFFF" (White).
 
     Returns:
-        File: The generated image as a PNG file
-    """
+        File: The generated PNG file
+    """    
     if font not in font_mapping:
         return {"error": "Font not found"}
 
-    image = Image.new("RGBA", (512, 256), (255, 255, 255, 0))
-    logger.debug(f"Font: {font}, Font Size: {font_size}, Text: {text}")
+    start_time = time.time()
+    image = Image.new("RGBA", (512, 256), (255, 255, 255, 255))
+    font_size = 16
+    logger.debug(f"Font: {font}, Text: {text}")
     font_file = ImageFont.truetype(font_mapping[font], font_size)
 
+    # Holy Fuck this was a bad idea to scale it in this method
+    # logger.debug(f"Font bounding box: {font_file.getbbox(text)}, Image Size: {image.size}, Mathed: {image.size[0] * (font_pct / 100)}")
+    # while font_file.getbbox(text)[0] < image.size[0] * (font_pct / 100):
+    #     font_size += 1
+    #     font_file = ImageFont.truetype(font_mapping[font], font_size)
+    #     logger.debug(f"Font Size: {font_size}")
+
+    # scales font size to image size
+    textLength = font_file.getlength(text) # gets length of text in pixels at size of 16
+    ratio = 500 / textLength # ratio is fixed width of 500 divided by the pixel length
+    if ratio < 1:
+        font_size = math.floor(font_size * (1 + ratio))
+    elif ratio > 1:
+        font_size = math.floor(font_size * ratio)
+    
+    logger.debug(f"Text Length: {textLength}, Ratio: {ratio}, Font Size: {font_size}")
+
+    font_file = ImageFont.truetype(font_mapping[font], font_size)
+
+    # convert font_colour hex code to tuple
+    font_colour = font_colour.lstrip("#")
+    font_colour_tuple = tuple(int(font_colour[i:i+2], 16) for i in (0, 2, 4))
+
     draw = ImageDraw.Draw(image)
-    draw.text((10, 10), text, font=font_file, fill="red")
+    image_size = image.size
+    draw.text((image_size[0]/2, image_size[1]/2), text, font=font_file, fill=font_colour_tuple, anchor="mm")
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
+    end_time = time.time()
+    logger.info(f"Time taken: {end_time - start_time} seconds")
 
-    image_size = image.size
+    
     return Response(
         buffer.getvalue(),
         media_type="image/png",
-        headers={"x-image-size": f"{image_size[1]}x{image_size[0]}"},
+        headers={
+            "x-image-size": f"{image_size[1]}x{image_size[0]}",
+            "x-time-taken": f"{end_time-start_time}",
+            "x-font-size": f"{font_size}",
+        },
     )
 
 

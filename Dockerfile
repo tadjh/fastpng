@@ -19,9 +19,15 @@ WORKDIR /srv
 # Install dependencies
 COPY --from=builder /tmp/requirements.txt .
 RUN pip install --no-cache-dir --upgrade -r /srv/requirements.txt
+RUN apt-get update && apt-get install -y fontconfig
 
 # Copy the application files
 COPY ./fastpng /srv/app
+
+# add fonts to the container
+COPY ./fastpng/fonts /root/.fonts
+RUN fc-cache -f -v
+
 
 # Expose port for the application
 EXPOSE 8000
