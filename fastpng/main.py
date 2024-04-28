@@ -73,7 +73,7 @@ def read_fonts():
 
 
 @app.get("/generate_image", responses={200: {"content": {"image/png": {}}}})
-async def generate_image(font: str, text: str, font_colour: str= "FFFFFF"):
+async def generate_image(font: str, text: str, font_colour: str= "FFFFFF", font_size: int=40, offset_x: int = None, offset_y: int = None):
     """Generates an image with the given text and font
 
     Args:
@@ -86,10 +86,17 @@ async def generate_image(font: str, text: str, font_colour: str= "FFFFFF"):
     """    
     if font not in font_mapping:
         return {"error": "Font not found"}
+    
+    # remove # from font_colour
+    font_colour = font_colour.lstrip("#")
+    # check that font_colour is a valid hex code
+    if not all(c in "0123456789ABCDEF" for c in font_colour):
+        return {"error": "Invalid font colour"}
+
 
     start_time = time.time()
-    image = Image.new("RGBA", (512, 256), (255, 255, 255, 255))
-    font_size = 16
+    image = Image.new("RGBA", (512, 512), (255, 255, 255, 255))
+    # font_size = 40
     logger.debug(f"Font: {font}, Text: {text}")
     font_file = ImageFont.truetype(font_mapping[font], font_size)
 
@@ -102,23 +109,27 @@ async def generate_image(font: str, text: str, font_colour: str= "FFFFFF"):
 
     # scales font size to image size
     textLength = font_file.getlength(text) # gets length of text in pixels at size of 16
-    ratio = 500 / textLength # ratio is fixed width of 500 divided by the pixel length
-    if ratio < 1:
-        font_size = math.floor(font_size * (1 + ratio))
-    elif ratio > 1:
+    image_size = image.size # (width, height)
+    # ratio = 500 / textLength # ratio is fixed width of 500 divided by the pixel length
+    ratio = image_size[1] * 0.97 / textLength
+
+    # if ratio < 1: # less than
+    #     font_size = math.floor(font_size * (1 + ratio))
+    #     logger.debug(f"font size is: {font_size}")
+    if ratio > 1: # greater than
         font_size = math.floor(font_size * ratio)
+    
     
     logger.debug(f"Text Length: {textLength}, Ratio: {ratio}, Font Size: {font_size}")
 
     font_file = ImageFont.truetype(font_mapping[font], font_size)
 
     # convert font_colour hex code to tuple
-    font_colour = font_colour.lstrip("#")
     font_colour_tuple = tuple(int(font_colour[i:i+2], 16) for i in (0, 2, 4))
 
     draw = ImageDraw.Draw(image)
-    image_size = image.size
-    draw.text((image_size[0]/2, image_size[1]/2), text, font=font_file, fill=font_colour_tuple, anchor="mm")
+    offset = (image_size[0] / 2, image_size[1] / 2) if offset_x is None and offset_y is None else (offset_x, offset_y)
+    draw.text(offset, text, font=font_file, fill=font_colour_tuple, anchor="mm")
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
