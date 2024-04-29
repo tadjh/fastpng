@@ -73,7 +73,7 @@ def read_fonts():
 
 
 @app.get("/generate_image", responses={200: {"content": {"image/png": {}}}})
-async def generate_image(font: str, text: str, font_colour: str= "FFFFFF", font_size: int=40, offset_x: int = None, offset_y: int = None):
+async def generate_image(font: str, text: str, font_colour: str= "FFFFFF", font_size: int=40, offset_x: int = 256, offset_y: int = 256, width: int = 512, height: int = 512):
     """Generates an image with the given text and font
 
     Args:
@@ -95,7 +95,7 @@ async def generate_image(font: str, text: str, font_colour: str= "FFFFFF", font_
 
 
     start_time = time.time()
-    image = Image.new("RGBA", (512, 512), (255, 255, 255, 255))
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     # font_size = 40
     logger.debug(f"Font: {font}, Text: {text}")
     font_file = ImageFont.truetype(font_mapping[font], font_size)
@@ -113,11 +113,11 @@ async def generate_image(font: str, text: str, font_colour: str= "FFFFFF", font_
     # ratio = 500 / textLength # ratio is fixed width of 500 divided by the pixel length
     ratio = image_size[1] * 0.97 / textLength
 
-    # if ratio < 1: # less than
-    #     font_size = math.floor(font_size * (1 + ratio))
-    #     logger.debug(f"font size is: {font_size}")
-    if ratio > 1: # greater than
+    if ratio < 1: # less than
         font_size = math.floor(font_size * ratio)
+    #     logger.debug(f"font size is: {font_size}")
+    # if ratio > 1: # greater than
+    #   font_size = math.floor(font_size * (1 + ratio))
     
     
     logger.debug(f"Text Length: {textLength}, Ratio: {ratio}, Font Size: {font_size}")
@@ -128,8 +128,8 @@ async def generate_image(font: str, text: str, font_colour: str= "FFFFFF", font_
     font_colour_tuple = tuple(int(font_colour[i:i+2], 16) for i in (0, 2, 4))
 
     draw = ImageDraw.Draw(image)
-    offset = (image_size[0] / 2, image_size[1] / 2) if offset_x is None and offset_y is None else (offset_x, offset_y)
-    draw.text(offset, text, font=font_file, fill=font_colour_tuple, anchor="mm")
+    # offset = (image_size[0] / 2, image_size[1] / 2) if offset_x is None and offset_y is None else (offset_x, offset_y)
+    draw.text((offset_x, offset_y), text, font=font_file, fill=font_colour_tuple, anchor="mm")
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
