@@ -72,7 +72,7 @@ def read_fonts():
     return sorted(list(font_mapping.keys()))
    
 @app.get("/generate-image", responses={200: {"content": {"image/png": {}}}})
-async def generate_image(font: str, text: str, font_color: str= "FFFFFF", font_size: int=40, width: int = 512, height: int = 512, offset_x: int = 256, offset_y: int = 256, anchor: str = "mm"):
+async def generate_image(font: str, text: str, font_color: str = "FFFFFF", font_size: int = 40, width: int = 512, height: int = 512, offset_x: int = 256, offset_y: int = 256, anchor: str = "mm"):
     """Generates an image with the given text and font
 
     Args:
