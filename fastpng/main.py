@@ -90,7 +90,7 @@ async def generate_image(imageRequest: ImageRequest):
         class ImageRequest {
             font (str): The font name from /fonts
             text (str): The text to be displayed
-            fontColour (str, optional): Colour of font in HEX. Defaults to "FFFFFF" (White).
+            fontColor (str, optional): Color of font in HEX. Defaults to "FFFFFF" (White).
             fontSize (int, optional): The font size in pixels. Defaults to 40.
             width (int, optional): The Image width in pixels. Defaults to 512.
             height (int, optional): The Image height in pixels. Defaults to 512.
@@ -139,13 +139,20 @@ async def generate_image(imageRequest: ImageRequest):
 
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
-    buffer.seek(0)
-    img_str = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
+    # bytes
+    result = buffer.getvalue()
+
+    # Base 64 Alternative
+    # buffer.seek(0)
+    # result = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode()
+
     end_time = time.time()
     logger.info(f"Time taken: {end_time - start_time} seconds")
+
     return Response(
-        img_str,
-        media_type="data:image/png;base64",
+        result,
+        media_type="image/png",
         headers={
             "x-time-taken": f"{end_time-start_time}",
             "x-image-size": f"{imageRequest.width}x{imageRequest.height}",
