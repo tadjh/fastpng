@@ -111,7 +111,7 @@ async def generate_image(font: str, text: str, font_color: str = "FFFFFF", font_
 
     text_length = font_file.getlength(text)
     
-    ratio = width * 0.97 / text_length
+    ratio = width * 0.90 / text_length
 
     if ratio < 1:
         optimal_font_size = math.floor(optimal_font_size * ratio)    
